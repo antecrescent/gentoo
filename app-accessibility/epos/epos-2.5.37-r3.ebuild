@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -6,7 +6,7 @@ EAPI=7
 inherit autotools flag-o-matic
 
 DESCRIPTION="Language independent text-to-speech system"
-HOMEPAGE="http://epos.ufe.cz/"
+HOMEPAGE="https://epos.speech.cz/"
 SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
 
 LICENSE="GPL-2"

@@ -3,6 +3,6 @@
 <pkgmetadata>
 	<!-- maintainer-needed -->
 	<upstream>
-		<remote-id type="sourceforge">genromfs</remote-id>
+		<remote-id type="sourceforge">romfs</remote-id>
 	</upstream>
 </pkgmetadata>

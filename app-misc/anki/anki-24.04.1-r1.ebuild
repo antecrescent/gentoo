@@ -858,7 +858,7 @@ src_prepare() {
 src_compile() {
 	filter-lto
 	tc-export AR CC PKG_CONFIG
-	export CARGO_TARGET_DIR="${S}"/out/rust
+	export CARGO_TARGET_DIR="${S}"/out/rust CFLAGS
 
 	# Overview of the build process
 	#

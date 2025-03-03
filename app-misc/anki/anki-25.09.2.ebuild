@@ -26,6 +26,7 @@ declare -A COMMITS=(
 	[ftl-core]="480ef0da728c7ea3485c58529ae7ee02be3e5dba"
 	[ftl-desktop]="fd5f984785ad07a0d3dbd893ee3d7e3671eaebd6"
 )
+YARN_PV="1.22.22"
 SRC_URI="${CARGO_CRATE_URIS}
 	https://github.com/ankitects/anki/archive/refs/tags/${PV}.tar.gz -> ${P}.gh.tar.gz
 	https://github.com/ankitects/anki-core-i18n/archive/${COMMITS[ftl-core]}.tar.gz
@@ -33,9 +34,8 @@ SRC_URI="${CARGO_CRATE_URIS}
 	https://github.com/ankitects/anki-desktop-ftl/archive/${COMMITS[ftl-desktop]}.tar.gz
 	-> anki-desktop-ftl-${COMMITS[ftl-desktop]}.gh.tar.gz
 	https://github.com/gentoo-crate-dist/anki/releases/download/${PV%.*}/${P%.*}-crates.tar.xz
-	gui? (
-		https://home.cit.tum.de/~salu/distfiles/${P}-node_modules.tar.xz
-	)
+	corepack? ( https://home.cit.tum.de/~salu/distfiles/${P}-yarn-${YARN_PV}.tgz )
+	gui? ( https://home.cit.tum.de/~salu/distfiles/${P}-node_modules.tar.xz )
 "
 # How to get an up-to-date summary of runtime JS libs' licenses:
 # ./node_modules/.bin/license-checker-rseidelsohn --production --excludePackages anki --summary
@@ -53,7 +53,7 @@ LICENSE+=" openssl"
 SLOT="0"
 KEYWORDS="~amd64"
 
-IUSE="+gui"
+IUSE="corepack +gui"
 REQUIRED_USE="
 	doc? ( gui )
 	gui? ( ${PYTHON_REQUIRED_USE} )
@@ -114,7 +114,8 @@ BDEPEND="
 		${PYTHON_DEPS}
 		app-alternatives/ninja
 		>=net-libs/nodejs-20.12.1
-		sys-apps/yarn
+		corepack? ( net-libs/nodejs[corepack] )
+		!corepack? ( sys-apps/yarn )
 		$(python_gen_cond_dep 'dev-python/pyqt6[${PYTHON_USEDEP}]')
 	)
 	test? (
@@ -148,6 +149,9 @@ pkg_setup() {
 	export PROTOC_BINARY="${BROOT}"/usr/bin/protoc
 	export LIBSQLITE3_SYS_USE_PKG_CONFIG=1
 	export ZSTD_SYS_USE_PKG_CONFIG=1
+	if use gui && use corepack; then
+		export COREPACK_DEFAULT_TO_LATEST=0
+	fi
 	rust_pkg_setup
 	use gui && python-single-r1_pkg_setup
 }
@@ -164,9 +168,14 @@ python_prepare_all() {
 		sed "/^REPO_ROOT/s|=.*|= \"${S}\"|" -i python/sphinx/conf.py || die
 	fi
 
-	# Unpin Yarn
-	sed -e '/"type": "module"/s/,//' \
-		-e '/packageManager/d' -i package.json || die
+	# Unpin and set up Yarn
+	if use corepack; then
+		sed -e "s/yarn@[.0-9]*/yarn@${YARN_PV}/" -i package.json || die
+		corepack install -g --cache-only "${DISTDIR}"/${P}-yarn-${YARN_PV}.tgz || die
+	else
+		sed -e '/"type": "module"/s/,//' \
+			-e '/packageManager/d' -i package.json || die
+	fi
 
 	# Not running the black formatter on generated files saves a dependency
 	sed '/subprocess/d' -i pylib/tools/hookslib.py || die

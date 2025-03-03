@@ -24,6 +24,9 @@
 		<remote-id type="github">ankitects/anki</remote-id>
 	</upstream>
 	<use>
+		<flag name="corepack">
+			Build GUI using the corepack package management tool.
+		</flag>
 		<flag name="gui">
 			Enable support for a graphical user interface. Disable for standalone sync server.
 		</flag>

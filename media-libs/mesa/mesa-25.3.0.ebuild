@@ -151,10 +151,6 @@ CLC_DEPSTRING="
 "
 BDEPEND="
 	${PYTHON_DEPS}
-	opencl? (
-		>=dev-util/bindgen-0.71.1
-		${RUST_DEPEND}
-	)
 	>=dev-build/meson-1.7.0
 	app-alternatives/yacc
 	app-alternatives/lex
@@ -164,6 +160,10 @@ BDEPEND="
 		dev-python/packaging[\${PYTHON_USEDEP}]
 		dev-python/pyyaml[\${PYTHON_USEDEP}]
 	")
+	opencl? (
+		>=dev-util/bindgen-0.71.1
+		${RUST_DEPEND}
+	)
 	video_cards_asahi? ( ${CLC_DEPSTRING} )
 	video_cards_intel? ( ${CLC_DEPSTRING} )
 	video_cards_panfrost? ( ${CLC_DEPSTRING} )
@@ -184,6 +184,11 @@ x86? (
 	usr/lib/libgallium-*.so
 	usr/lib/libGLX_mesa.so.0.0.0
 )"
+
+PATCHES=(
+	"${FILESDIR}"/${P}-app-alternatives.patch
+	"${FILESDIR}"/${P}-support-byacc.patch
+)
 
 src_unpack() {
 	if [[ ${PV} == 9999 ]]; then
@@ -273,6 +278,14 @@ pkg_setup() {
 
 src_prepare() {
 	default
+	local yacc_is_bison=$(
+		if has_version -b 'app-alternatives/yacc[bison]'; then
+			echo "true" || die
+		else
+			echo "false" || die
+		fi
+	)
+	sed -i -e "s/@GENTOO_YACC_IS_BISON@/${yacc_is_bison}/" meson.build || die
 	sed -i -e "/^PLATFORM_SYMBOLS/a '__gentoo_check_ldflags__'," \
 		bin/symbols-check.py || die # bug #830728
 }
@@ -386,7 +399,7 @@ multilib_src_configure() {
 
 	if use video_cards_asahi ||
 	   use video_cards_panfrost; then
-	    emesonargs+=(-Dprecomp-compiler=system)
+		emesonargs+=(-Dprecomp-compiler=system)
 	fi
 
 	use debug && EMESON_BUILDTYPE=debug

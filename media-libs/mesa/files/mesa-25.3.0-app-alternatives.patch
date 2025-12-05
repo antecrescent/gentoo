@@ -1,0 +1,142 @@
+--- a/meson.build
++++ b/meson.build
+@@ -1942,7 +1942,6 @@ else
+   pre_args += '-DTHREAD_SANITIZER=0'
+ endif
+ 
+-yacc_is_bison = true
+ needs_flex_bison = with_any_opengl or with_freedreno_vk or with_intel_tools or with_gallium
+ 
+ if build_machine.system() == 'windows'
+@@ -1973,21 +1972,16 @@ if build_machine.system() == 'windows'
+     prog_bison = find_program('bison', 'yacc', required : needs_flex_bison, disabler : true)
+   endif
+ else
+-  prog_bison = find_program('bison', required : false)
+-
+-  if not prog_bison.found()
+-    prog_bison = find_program('byacc', required : needs_flex_bison, disabler : true)
+-    yacc_is_bison = false
+-  endif
++  prog_bison = find_program('yacc', required : needs_flex_bison, disabler : true)
+ 
+   # Disable deprecated keyword warnings, since we have to use them for
+   # old-bison compat.  See discussion in
+   # https://gitlab.freedesktop.org/mesa/mesa/merge_requests/2161
+-  if find_program('bison', required : false, version : '> 2.3').found()
++  if @GENTOO_YACC_IS_BISON@
+     prog_bison = [prog_bison, '-Wno-deprecated']
+   endif
+ 
+-  prog_flex = find_program('flex', required : needs_flex_bison, disabler : true)
++  prog_flex = find_program('lex', required : needs_flex_bison, disabler : true)
+   prog_flex_cpp = prog_flex
+ endif
+ 
+--- a/src/compiler/glsl/glcpp/meson.build
++++ b/src/compiler/glsl/glcpp/meson.build
+@@ -1,24 +1,11 @@
+ # Copyright © 2017 Intel Corporation
+ # SPDX-License-Identifier: MIT
+ 
+-bison_command = []
+-if yacc_is_bison
+-  bison_command = [
+-    prog_bison, '-o', '@OUTPUT0@', '-p', 'glcpp_parser_',
+-    '--defines=@OUTPUT1@', '@INPUT@',
+-  ]
+-else
+-  bison_command = [
+-    prog_bison, '-o', '@OUTPUT0@', '-p', 'glcpp_parser_',
+-    '-H', '@OUTPUT1@', '@INPUT@',
+-  ]
+-endif
+-
+ glcpp_parse = custom_target(
+   'glcpp-parse.[ch]',
+   input : 'glcpp-parse.y',
+   output : ['glcpp-parse.c', 'glcpp-parse.h'],
+-  command : bison_command
++  command : [prog_bison, '-o@OUTPUT0@', '-p', 'glcpp_parser_', '-H@OUTPUT1@', '@INPUT@'],
+ )
+ 
+ glcpp_lex = custom_target(
+--- a/src/compiler/glsl/meson.build
++++ b/src/compiler/glsl/meson.build
+@@ -12,24 +12,11 @@ libglsl_util = static_library(
+ 
+ subdir('glcpp')
+ 
+-bison_command = []
+-if yacc_is_bison
+-  bison_command = [
+-    prog_bison, '-o', '@OUTPUT0@', '-p', '_mesa_glsl_', '--defines=@OUTPUT1@',
+-    '@INPUT@',
+-  ]
+-else
+-  bison_command = [
+-    prog_bison, '-o', '@OUTPUT0@', '-p', '_mesa_glsl_', '-H', '@OUTPUT1@',
+-    '@INPUT@',
+-  ]
+-endif
+-
+ glsl_parser = custom_target(
+   'glsl_parser',
+   input : 'glsl_parser.yy',
+   output : ['glsl_parser.cpp', 'glsl_parser.h'],
+-  command : bison_command
++  command : [prog_bison, '-o@OUTPUT0@', '-p', '_mesa_glsl_', '-H@OUTPUT1@', '@INPUT@'],
+ )
+ 
+ glsl_lexer_cpp = custom_target(
+--- a/src/intel/compiler/brw/meson.build
++++ b/src/intel/compiler/brw/meson.build
+@@ -185,24 +185,11 @@ endif
+ 
+ if with_intel_tools
+ 
+-bison_command = []
+-if yacc_is_bison
+-  bison_command = [
+-    prog_bison, '@INPUT@', '--defines=@OUTPUT1@',
+-    '--output=@OUTPUT0@'
+-  ]
+-else
+-  bison_command = [
+-    prog_bison, '-H', '@OUTPUT1@',
+-    '-o', '@OUTPUT0@', '@INPUT@'
+-  ]
+-endif
+-
+ brw_gram_tab = custom_target(
+   'brw_gram.tab.[ch]',
+   input : 'brw_gram.y',
+   output : ['brw_gram.tab.c', 'brw_gram.tab.h'],
+-  command : bison_command
++  command : [prog_bison, '-H@OUTPUT1@', '-o@OUTPUT0@', '@INPUT@'],
+ )
+ 
+ brw_lex_yy_c = custom_target(
+--- a/src/mesa/program/meson.build
++++ b/src/mesa/program/meson.build
+@@ -1,13 +1,6 @@
+ # Copyright © 2017 Intel Corporation
+ # SPDX-License-Identifier: MIT
+ 
+-bison_command = []
+-if yacc_is_bison
+-  bison_command = [prog_bison, '-o', '@OUTPUT0@', '--defines=@OUTPUT1@', '@INPUT@']
+-else
+-  bison_command = [prog_bison, '-o', '@OUTPUT0@', '-H', '@OUTPUT1@', '@INPUT@']
+-endif
+-
+ mesa_lex = custom_target(
+   'mesa_lex',
+   input : 'program_lexer.l',
+@@ -19,5 +12,5 @@ program_parse_tab = custom_target(
+   'program_parse_tab.[ch]',
+   input : 'program_parse.y',
+   output : ['program_parse.tab.c', 'program_parse.tab.h'],
+-  command : bison_command,
++  command : [prog_bison, '-o@OUTPUT0@', '-H@OUTPUT1@', '@INPUT@'],
+ )

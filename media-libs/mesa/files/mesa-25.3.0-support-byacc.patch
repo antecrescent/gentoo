@@ -1,0 +1,72 @@
+Regression that broke app-alternatives/yacc[byacc] support tracked at:
+https://gitlab.freedesktop.org/mesa/mesa/-/issues/14381
+
+Applied proposed fix from:
+https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/38727
+--- a/src/compiler/glsl/glcpp/glcpp-parse.y
++++ b/src/compiler/glsl/glcpp/glcpp-parse.y
+@@ -176,8 +176,8 @@ add_builtin_define(glcpp_parser_t *parser, const char *name, int value);
+ 
+ %}
+ 
+-%define api.pure
+-%define parse.error verbose
++%pure-parser
++%error-verbose
+ 
+ %locations
+ %initial-action {
+--- a/src/compiler/glsl/glsl_parser.yy
++++ b/src/compiler/glsl/glsl_parser.yy
+@@ -82,8 +82,8 @@ static bool match_layout_qualifier(const char *s1, const char *s2,
+ 
+ %expect 0
+ 
+-%define api.pure
+-%define parse.error verbose
++%pure-parser
++%error-verbose
+ 
+ %locations
+ %initial-action {
+--- a/src/freedreno/afuc/parser.y
++++ b/src/freedreno/afuc/parser.y
+@@ -185,7 +185,7 @@ label(const char *str)
+ %type <num> xmov
+ %type <num> peek
+ 
+-%define parse.error verbose
++%error-verbose
+ 
+ %start instrs
+ 
+--- a/src/freedreno/ir3/ir3_parser.y
++++ b/src/freedreno/ir3/ir3_parser.y
+@@ -473,7 +473,7 @@ static void print_token(FILE *file, int type, YYSTYPE value)
+ %type <unum> const_val cat6_src_shift
+ %type <num> buf_type
+ 
+-%define parse.error verbose
++%error-verbose
+ 
+ %start shader
+ 
+--- a/src/mesa/program/program_parse.y
++++ b/src/mesa/program/program_parse.y
+@@ -128,11 +128,11 @@ static struct asm_instruction *asm_instruction_copy_ctor(
+    } while(0)
+ %}
+ 
+-%define api.pure
++%pure-parser
+ %locations
+ %lex-param   { struct asm_parser_state *state }
+ %parse-param { struct asm_parser_state *state }
+-%define parse.error verbose
++%error-verbose
+ 
+ %union {
+    struct asm_instruction *inst;
+-- 
+GitLab
+
